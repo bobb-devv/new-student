@@ -1,0 +1,54 @@
+services:
+  ipfs:
+    image: ipfs/kubo:v0.32.1
+    restart: unless-stopped
+    environment:
+      IPFS_PROFILE: server
+    volumes:
+      - ipfs_data:/data/ipfs
+      - ipfs_staging:/export
+    ports:
+      - "4001:4001/tcp"
+      - "4001:4001/udp"
+      # Keep Kubo's administrative API bound to the host loopback only.
+      - "127.0.0.1:5001:5001"
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "ipfs id >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      ipfs:
+        condition: service_started
+    environment:
+      PORT: "4180"
+      SCC_ENV: "${SCC_ENV:-development}"
+      SCC_ADMIN_EMAIL: "${SCC_ADMIN_EMAIL:?Set SCC_ADMIN_EMAIL in .env}"
+      SCC_ADMIN_PASSWORD: "${SCC_ADMIN_PASSWORD:?Set SCC_ADMIN_PASSWORD in .env}"
+      SCC_CREDENTIAL_MASTER_KEY: "${SCC_CREDENTIAL_MASTER_KEY:?Set a 64-hex-character key in .env}"
+      SCC_DATA_DIR: "/app/data"
+      SCC_STORAGE_DIR: "/app/storage"
+      SCC_IPFS_API_URL: "http://ipfs:5001"
+      SCC_IPFS_GATEWAY_URL: "${SCC_IPFS_GATEWAY_URL:-http://localhost:8080}"
+      SCC_BASE_URL: "${SCC_BASE_URL:-http://localhost:4180}"
+      SCC_ISSUER_DID_HOST: "${SCC_ISSUER_DID_HOST:-localhost}"
+      SCC_POLYGON_RPC_URL: "${SCC_POLYGON_RPC_URL:-}"
+      SCC_ANCHOR_PRIVATE_KEY: "${SCC_ANCHOR_PRIVATE_KEY:-}"
+      SCC_ANCHOR_CONTRACT_ADDRESS: "${SCC_ANCHOR_CONTRACT_ADDRESS:-}"
+      SCC_CHAIN_NETWORK: "${SCC_CHAIN_NETWORK:-Polygon Amoy}"
+    volumes:
+      - ./data:/app/data
+      - ./storage:/app/storage
+    ports:
+      - "4180:4180"
+
+volumes:
+  ipfs_data:
+  ipfs_staging:

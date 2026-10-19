@@ -1,0 +1,15 @@
+.gradle/
+**/build/
+.idea/
+*.iml
+local.properties
+.env
+.env.*
+!.env.example
+
+# Local databases and user-uploaded encrypted files
+data/*.db*
+server/data/*.db*
+storage/
+.runtime-smoke/
+.kotlin/
